@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>JsMandelbrot</title>
+    <link rel="stylesheet" media="screen" href="stylesheets/main.css" />
+    <link rel="stylesheet" media="screen" href="stylesheets/jquery-ui-1.10.3.custom.min.css" />
+    <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+    <script src="javascripts/lib/jquery-1.9.0.min.js" type="text/javascript"></script>
+    <script src="javascripts/lib/jquery.wheelevent.js" type="text/javascript"></script>
+    <script src="javascripts/lib/jquery-ui-1.10.3.custom.min.js" type="text/javascript"></script>
+
+    <script src="javascripts/math/Complex.js" type="text/javascript"></script>
+
+    <script src="javascripts/algorithm/AnyPowAlgorithm.js" type="text/javascript"></script>
+    <script src="javascripts/algorithm/ArctanhAlgorithm.js" type="text/javascript"></script>
+    <script src="javascripts/algorithm/BasicAlgorithm.js" type="text/javascript"></script>
+    <script src="javascripts/color/Color.js" type="text/javascript"></script>
+    <script src="javascripts/color/ColorList.js" type="text/javascript"></script>
+    <script src="javascripts/ColorPanel.js" type="text/javascript"></script>
+    <script src="javascripts/Application.js" type="text/javascript"></script>
+    <script src="javascripts/AaBb.js" type="text/javascript"></script>
+    <script src="javascripts/webgl/GlRenderer.js" type="text/javascript"></script>
+    <script src="javascripts/webgl/GlUtil.js" type="text/javascript"></script>
+    <script src="javascripts/ImageCoordinate.js" type="text/javascript"></script>
+    <script src="javascripts/JsMandelbrot.js" type="text/javascript"></script>
+    <script src="javascripts/Mandelbrot.js" type="text/javascript"></script>
+    <script src="javascripts/PMandelbrot.js" type="text/javascript"></script>
+
+    <script id="shader-fs" type="x-shader/x-fragment">
+        precision mediump float;
+
+        uniform int maxIter;
+
+        varying vec2 vPosition;
+
+        int mandelbrotPow2(float cx, float cy)
+        {
+            int runaway = 0;
+
+            float x = 0.0;
+            float y = 0.0;
+            float tempX = 0.0;
+
+            for(int i=0; i<10; i++) {
+                tempX = x * x - y * y + float(cx);
+                y = 2.0 * x * y + float(cy);
+                x = tempX;
+                if(runaway == 0 && x * x + y * y > 4.0) {
+                    runaway = i;
+                    break;
+                }
+            }
+
+            return runaway;
+        }
+
+        int mandelbrotAnyPow(float cx, float cy) {
+            int runaway = 0;
+
+            float power = 2.07;
+            float rho;
+            float theta;
+            float factor;
+            float angle;
+
+            float ur = 0.0;
+            float ui = 0.0;
+
+            for(int i=0; i<65535; i++) {
+                if(i >= 10) {
+                    break;
+                }
+
+                rho = sqrt(ur*ur+ui*ui);
+                theta = (rho == 0.0 ? 0.0 : acos(ur/rho));
+                if(ui < 0.0) {
+                    theta = -theta;
+                }
+
+                factor = pow(rho, power);
+                angle = power*theta;
+                ur = factor * cos(angle) + cx;
+                ui = factor * sin(angle) + cy;
+
+                if(ur * ur + ui * ui > 4.0) {
+                    runaway = i;
+                    break;
+                }
+            }
+
+            return runaway;
+        }
+
+        void main() {
+            int runaway = mandelbrotAnyPow(vPosition.x, vPosition.y);
+            float colorStep = 1.0 / 20.0;
+
+            if(runaway != 0) {
+                gl_FragColor = vec4(float(runaway)*colorStep, 0.0, 0.0, 1.0);
+            } else {
+                gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+            }
+        }
+    </script>
+    <script id="shader-fs2" type="x-shader/x-fragment">
+        precision mediump float;
+        varying vec2 vPosition;
+
+        void main(void) {
+            float cx = vPosition.x;
+            float cy = vPosition.y;
+
+            float hue;
+            float saturation;
+            float value;
+            float hueRound;
+            int hueIndex;
+
+            float f;
+            float p;
+            float q;
+            float t;
+
+
+
+
+
+            if (runaway != 0) {
+                hue = float(runaway) / 200.0;
+                saturation = 0.6;
+                value = 1.0;
+
+                hueRound = hue * 6.0;
+                hueIndex = int(mod(float(int(hueRound)), 6.0));
+                f = fract(hueRound);
+                p = value * (1.0 - saturation);
+                q = value * (1.0 - f * saturation);
+                t = value * (1.0 - (1.0 - f) * saturation);
+
+                if (hueIndex == 0)
+                    gl_FragColor = vec4(value, t, p, 1.0);
+                else if (hueIndex == 1)
+                    gl_FragColor = vec4(q, value, p, 1.0);
+                else if (hueIndex == 2)
+                    gl_FragColor = vec4(p, value, t, 1.0);
+                else if (hueIndex == 3)
+                    gl_FragColor = vec4(p, q, value, 1.0);
+                else if (hueIndex == 4)
+                    gl_FragColor = vec4(t, p, value, 1.0);
+                else if (hueIndex == 5)
+                    gl_FragColor = vec4(value, p, q, 1.0);
+            } else {
+                gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+            }
+        }
+    </script>
+    <script id="shader-vs" type="x-shader/x-vertex">
+        attribute vec2 aVertexPosition;
+        attribute vec2 aPlotPosition;
+
+        varying vec2 vPosition;
+
+        void main(void) {
+            gl_Position = vec4(aVertexPosition, 1.0, 1.0);
+            vPosition = aPlotPosition;
+        }
+    </script>
+</head>
+<body>
+    <div id="topDiv">
+        <div class="coordinatesDiv">
+            <h3>Coordinates</h3>
+            <ul>
+                <li class="x">X : <span class="value"></span></li>
+                <li class="y">Y : <span class="value"></span></li>
+                <li class="zoom">Zoom : <span class="value"></span></li>
+                <li class="maxIter">Max. iter. : <span class="value"></span></li>
+                <li class="escapeRadius">Escape radius : <span class="value"></span></li>
+            </ul>
+        </div>
+        <div class="sizeControlDiv">
+            <div class="widthSliderDiv sliderDiv">
+                <div class="labelDiv">Width</div>
+                <div class="slider"></div>
+            </div>
+            <div class="heightSliderDiv sliderDiv">
+                <div class="labelDiv">Height</div>
+                <div class="slider"></div>
+            </div>
+            <div class="keepProportionButtonDiv"></div>
+        </div>
+    </div>
+    <div id="rightDiv">
+        <div class="colorControlPanelDiv"></div>
+        <div class="colorListPanelDiv"></div>
+    </div>
+    <canvas id="canvas" />
+</body>
+</html>
