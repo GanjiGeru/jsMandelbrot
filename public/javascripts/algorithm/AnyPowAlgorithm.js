@@ -21,10 +21,6 @@ AnyPowAlgorithm.prototype.process = function(width, height, aabb, imageCoordinat
 
             var nbIter = 0;
             while(ur*ur+ui*ui < this.delta && nbIter < imageCoordinate.maxIter) {
-                /*var tmp = ur*ur - ui*ui + x;
-                var ui = 2*ur*ui + y;
-                var ur = tmp;*/
-
                 //Calcul des coordonnées polaires à partir des coordonnées cartésiennes
                 rho = Math.sqrt(ur*ur+ui*ui);
                 theta = (rho == 0 ? 0 : Math.acos(ur/rho));
@@ -37,8 +33,12 @@ AnyPowAlgorithm.prototype.process = function(width, height, aabb, imageCoordinat
                 ur = factor * Math.cos(angle) + x;
                 ui = factor * Math.sin(angle) + y;
 
-                /*ur = rho*rho * Math.cos(2*theta) + x;
-                ui = rho*rho * Math.sin(2*theta) + y;*/
+                /*// Autre solution, apparemment (source : wikipedia, Multibrot set)
+                xtmp=(x*x+y*y)^(n/2)*cos(n*atan2(y,x)) + a
+                y=(x*x+y*y)^(n/2)*sin(n*atan2(y,x)) + b
+                x=xtmp
+                */
+
 
                 nbIter++;
             }

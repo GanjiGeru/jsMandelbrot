@@ -196,7 +196,12 @@
         </div>
         <div id="rightDiv">
             <div class="colorControlPanelDiv"></div>
-            <div class="colorListPanelDiv"></div>
+            <div class="firstColorDiv">
+                <div class="textDiv">Set color</div>
+                <div class="colorDiv" index="0"></div>
+            </div>
+            <div class="gradientsTextDiv">Gradients</div>
+            <div class="colorListDiv"></div>
         </div>
         <div id="hidingBordersDiv">
             <div class="top"></div>
@@ -205,6 +210,14 @@
             <div class="right"></div>
         </div>
         <canvas id="canvas" />
+    </div>
+    <div id="dialogsDiv">
+        <div class="colorPickerDialog" title="Pick color">
+            <div class="redDiv slider"></div>
+            <div class="greenDiv slider"></div>
+            <div class="blueDiv slider"></div>
+            <div class="swatchDiv" class="ui-widget-content ui-corner-all"></div>
+        </div>
     </div>
 </body>
 </html>

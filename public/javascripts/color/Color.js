@@ -39,6 +39,12 @@ Color.getHexaDigit = function(d) {
     }
 }
 
+Color.prototype.set = function(color) {
+    this.r = color.r;
+    this.g = color.g;
+    this.b = color.b;
+}
+
 
 Color.BLACK = new Color(0, 0, 0);
 Color.WHITE = new Color(255, 255, 255);

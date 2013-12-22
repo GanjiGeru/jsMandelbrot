@@ -2,7 +2,7 @@ function PMandelbrot(controller) {
     this.controller = controller;
     this.colorList = ColorList.PRESET2.clone();
 
-    this.colorPanel = new ColorPanel(this.colorList);
+    this.colorPanel = new ColorPanel(this.colorList, this);
     this.imageControl = new ImageControlPanel(this);
 
     this.canvas = $("#canvas");
@@ -20,9 +20,6 @@ PMandelbrot.prototype.repaint = function() {
 }
 
 PMandelbrot.prototype.paint2d = function() {
-    //var colorStep = 255 / this.controller.imageCoordinate.maxIter;
-    console.log(this.canvas[0].height+" ; "+this.controller.height);
-
     var px;
     var step1 =(this.canvas[0].width*Math.floor((this.canvas[0].height-this.controller.height)/2)+Math.floor((this.canvas[0].width-this.controller.width)/2))*4;//(this.canvas[0].height-this.controller.height) *this.canvas[0].width*4;
     for(px = 0; px<step1; px+=4) {
@@ -36,10 +33,6 @@ PMandelbrot.prototype.paint2d = function() {
 
     for(var j=0; j<this.controller.height; j++) {
         for(var i=0; i<this.controller.width; i++) {
-            /*this.imageData.data[px] = this.controller.data[i][j] * colorStep;
-            this.imageData.data[px+1] = 0;
-            this.imageData.data[px+2] = 0;*/
-
             var color = this.getColor(this.controller.data[i][j], this.controller.imageCoordinate.maxIter);
             this.imageData.data[px] = color.r;
             this.imageData.data[px+1] = color.g;
@@ -75,7 +68,7 @@ PMandelbrot.prototype.choseCanvasContext = function() {
         this.context.viewportHeight = this.canvas[0].height;
         this.isGlContext = true;
     } catch(e) {
-        console.log("Could not initialise WebGL, switching to 2d context");
+        //  console.log("Could not initialise WebGL, switching to 2d context");
         this.context = this.canvas[0].getContext("2d");
         this.isGlContext = false;
     }
@@ -101,7 +94,6 @@ PMandelbrot.prototype.registerEvents = function() {
         if(pMandelbrot.viewMoved && pMandelbrot.pressedPoint.x != point.x || pMandelbrot.pressedPoint.y != point.y) {
             pMandelbrot.controller.moveAaBb(pMandelbrot.pressedPoint.x - point.x, pMandelbrot.pressedPoint.y - point.y);
         }
-        pMandelbrot.pressedPoint = null;
         pMandelbrot.viewMoved = false;
         pMandelbrot.pressedMouseButton = null;
     });
@@ -159,8 +151,8 @@ PMandelbrot.prototype.movingView = function(x, y) {
 PMandelbrot.prototype.updateSize = function() {
     this.canvas[0].width = $(window).width()-200;
     this.canvas[0].height = $(window).height()-150;
-    $("#topDiv").width($(window).width()-200);
-    $("#rightDiv .colorListPanelDiv").height($(window).height()-150);
+    $("#rightDiv").height($(window).height()-150);
+    $("#rightDiv .colorListDiv").height($(window).height()-200);
     $("#hidingBordersDiv .top, #hidingBordersDiv .bottom").css("width", $(window).width()-200);
     $("#hidingBordersDiv .left, #hidingBordersDiv .right").css("height", $(window).height()-150);
 
@@ -183,7 +175,7 @@ PMandelbrot.prototype.getColor = function(nbIter, maxIter) {
     if(nbIter == maxIter) {
         return this.colorList.get(0);
     } else {
-        return this.colorList.get(1 + (nbIter-1) % (this.colorList.size()-1));
+        return this.colorList.get(1 + (nbIter-1) % (this.colorList.getSize()-1));
     }
 }
 
@@ -204,7 +196,6 @@ PMandelbrot.prototype.convertPointForController = function(point) {
 }
 
 PMandelbrot.prototype.updateHidingBorders = function(widthSliderValue, heightSliderValue) {
-console.log(widthSliderValue+", "+heightSliderValue);
     var xDiff = (this.canvas[0].width-Math.floor(this.canvas[0].width*widthSliderValue/100))/2;
     var yDiff = (this.canvas[0].height-Math.floor(this.canvas[0].height*heightSliderValue/100))/2;
     $("#hidingBordersDiv .top").css("height", Math.floor(yDiff));

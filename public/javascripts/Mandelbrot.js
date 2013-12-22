@@ -2,9 +2,9 @@ function Mandelbrot(width, height) {
     this.imageCoordinate = ImageCoordinate.defaultCoordinate();
     this.aabb = new AaBb();
 
-    //console.log(new Complex(1, 2).arctanh().mul(new Complex(1, 2)));
     //this.algorithm = (this.gl ? null : new ArctanhAlgorithm());
     this.algorithm = (this.gl ? null : new BasicAlgorithm());
+    //this.algorithm = (this.gl ? null : new AnyPowAlgorithm());
 
     this.presentation = new PMandelbrot(this);
     this.presentation.resizeController();
@@ -102,7 +102,6 @@ Mandelbrot.prototype.setSize = function(width, height) {
 }
 
 Mandelbrot.prototype.resize = function(width, height) {
-    console.log("ok");
     this.setSize(width, height);
     this.updateAaBb();
     this.updateData();
