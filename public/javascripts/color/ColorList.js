@@ -71,7 +71,7 @@ ColorList.PRESET1.addGradient(Color.YELLOW, Color.GREEN, 10);
 
 
 ColorList.PRESET2 = new ColorList();
-ColorList.PRESET2.addColor(Color.WHITE);
+ColorList.PRESET2.addColor(Color.BLACK);
 ColorList.PRESET2.addGradient(new Color(0, 96, 32), new Color(128, 0, 0), 30);
 ColorList.PRESET2.addGradient(new Color(128, 0, 0), new Color(64, 0, 64), 30);
 ColorList.PRESET2.addGradient(new Color(64, 0, 64), new Color(0, 96, 32), 30);

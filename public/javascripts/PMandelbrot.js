@@ -3,15 +3,16 @@ function PMandelbrot(controller) {
     this.colorList = ColorList.PRESET2.clone();
 
     this.colorPanel = new ColorPanel(this.colorList);
+    this.imageControl = new ImageControlPanel(this);
 
     this.canvas = $("#canvas");
     this.choseCanvasContext();
 
     this.controller.setGl(this.isGlContext ? this.context : null);
 
-    this.updateSize();
-
     this.registerEvents();
+
+    this.updateSize();
 }
 
 PMandelbrot.prototype.repaint = function() {
@@ -19,8 +20,20 @@ PMandelbrot.prototype.repaint = function() {
 }
 
 PMandelbrot.prototype.paint2d = function() {
-    var colorStep = 255 / this.controller.imageCoordinate.maxIter;
-    var px = 0;
+    //var colorStep = 255 / this.controller.imageCoordinate.maxIter;
+    console.log(this.canvas[0].height+" ; "+this.controller.height);
+
+    var px;
+    var step1 =(this.canvas[0].width*Math.floor((this.canvas[0].height-this.controller.height)/2)+Math.floor((this.canvas[0].width-this.controller.width)/2))*4;//(this.canvas[0].height-this.controller.height) *this.canvas[0].width*4;
+    for(px = 0; px<step1; px+=4) {
+        this.imageData.data[px] = 220;
+        this.imageData.data[px+1] = 220;
+        this.imageData.data[px+2] = 220;
+        this.imageData.data[px+3] = 255;
+    }
+
+    var step2 = (this.canvas[0].width - this.controller.width)*4;
+
     for(var j=0; j<this.controller.height; j++) {
         for(var i=0; i<this.controller.width; i++) {
             /*this.imageData.data[px] = this.controller.data[i][j] * colorStep;
@@ -35,6 +48,21 @@ PMandelbrot.prototype.paint2d = function() {
 
             px += 4;
         }
+
+        for(var k=0; k<step2; k+=4) {
+            this.imageData.data[px] = 220;
+            this.imageData.data[px+1] = 220;
+            this.imageData.data[px+2] = 220;
+            this.imageData.data[px+3] = 255;
+            px += 4;
+        }
+    }
+
+    for(; px<this.imageData.data.length; px+=4) {
+        this.imageData.data[px] = 220;
+        this.imageData.data[px+1] = 220;
+        this.imageData.data[px+2] = 220;
+        this.imageData.data[px+3] = 255;
     }
 
     this.context.putImageData(this.imageData, 0, 0);
@@ -43,18 +71,18 @@ PMandelbrot.prototype.paint2d = function() {
 PMandelbrot.prototype.choseCanvasContext = function() {
     try {
         this.context = this.canvas[0].getContext("experimental-webgl");
-        this.context.viewportWidth = canvas.width;
-        this.context.viewportHeight = canvas.height;
+        this.context.viewportWidth = this.canvas[0].width;
+        this.context.viewportHeight = this.canvas[0].height;
         this.isGlContext = true;
     } catch(e) {
         console.log("Could not initialise WebGL, switching to 2d context");
-        this.context = canvas.getContext("2d");
+        this.context = this.canvas[0].getContext("2d");
         this.isGlContext = false;
     }
 }
 
 PMandelbrot.prototype.getPoint = function(e) {
-    return {x : e.pageX-this.canvas[0].offsetLeft, y : e.pageY-this.canvas[0].offsetTop};
+    return {x : e.pageX-$("#canvas")[0].offsetLeft, y : e.pageY-$("#canvas")[0].offsetTop};
 }
 
 PMandelbrot.prototype.registerEvents = function() {
@@ -68,7 +96,7 @@ PMandelbrot.prototype.registerEvents = function() {
         pMandelbrot.pressedMouseButton = e.button;
     });
 
-    this.canvas.mouseup(function(e) {
+    $("#canvas, #hidingBordersDiv div").mouseup(function(e) {
         var point = pMandelbrot.getPoint(e);
         if(pMandelbrot.viewMoved && pMandelbrot.pressedPoint.x != point.x || pMandelbrot.pressedPoint.y != point.y) {
             pMandelbrot.controller.moveAaBb(pMandelbrot.pressedPoint.x - point.x, pMandelbrot.pressedPoint.y - point.y);
@@ -78,7 +106,7 @@ PMandelbrot.prototype.registerEvents = function() {
         pMandelbrot.pressedMouseButton = null;
     });
 
-    this.canvas.mousemove(function(e) {
+    $("#canvas, #hidingBordersDiv div").mousemove(function(e) {
         var point = pMandelbrot.getPoint(e);
         if(pMandelbrot.pressedMouseButton == 0) {
             pMandelbrot.viewMoved = true;
@@ -89,9 +117,14 @@ PMandelbrot.prototype.registerEvents = function() {
     });
 
     this.canvas.on("wheel", function(e) {
-        console.log("wheeeel");
         if(pMandelbrot.pressedMouseButton == null) {
-            pMandelbrot.controller.zoom(e.deltaY < 0, pMandelbrot.pressedPoint);
+            var xDiff = Math.floor((pMandelbrot.canvas[0].width-pMandelbrot.controller.width)/2);
+            var yDiff = Math.floor((pMandelbrot.canvas[0].height-pMandelbrot.controller.height)/2);
+            if(pMandelbrot.pressedPoint.x >= xDiff && pMandelbrot.pressedPoint.x < xDiff+pMandelbrot.controller.width &&
+                pMandelbrot.pressedPoint.y >= yDiff && pMandelbrot.pressedPoint.y < yDiff+pMandelbrot.controller.height) {
+
+                pMandelbrot.controller.zoom(e.deltaY < 0, pMandelbrot.convertPointForController(pMandelbrot.pressedPoint));
+            }
         }
     });
 
@@ -109,19 +142,8 @@ PMandelbrot.prototype.registerEvents = function() {
     });
 
     $(window).resize(function() {
-        pMandelbrot.controller.resize($(window).width()-200, $(window).height()-150);
-    });
-
-    $("#topDiv .sizeControlDiv .slider").each(function() {
-        $(this).slider({
-            value: 100,
-            range: "min"
-        });
-    });
-
-    this.keepProportion = true;
-    $("#topDiv .sizeControlDiv .keepProportionButtonDiv").click(function() {
-        pMandelbrot.toggleKeepProportion();
+        pMandelbrot.updateSize();
+        pMandelbrot.resizeController();
     });
 }
 
@@ -135,15 +157,17 @@ PMandelbrot.prototype.movingView = function(x, y) {
 }
 
 PMandelbrot.prototype.updateSize = function() {
-    this.canvas[0].width = this.controller.width;
-    this.canvas[0].height = this.controller.height;
+    this.canvas[0].width = $(window).width()-200;
+    this.canvas[0].height = $(window).height()-150;
     $("#topDiv").width($(window).width()-200);
     $("#rightDiv .colorListPanelDiv").height($(window).height()-150);
+    $("#hidingBordersDiv .top, #hidingBordersDiv .bottom").css("width", $(window).width()-200);
+    $("#hidingBordersDiv .left, #hidingBordersDiv .right").css("height", $(window).height()-150);
 
     if(this.isGlContext) {
 
     } else {
-        this.imageData = this.context.createImageData(this.controller.width, this.controller.height);
+        this.imageData = this.context.createImageData(this.canvas[0].width, this.canvas[0].height);
     }
 }
 
@@ -163,7 +187,29 @@ PMandelbrot.prototype.getColor = function(nbIter, maxIter) {
     }
 }
 
-PMandelbrot.prototype.toggleKeepProportion = function() {
-    this.keepProportion = !this.keepProportion;
-    $("#topDiv .sizeControlDiv .keepProportionButtonDiv").css("background-image", 'url("images/'+(this.keepProportion ? 'keepProportion' : 'dontKeepProportion')+'.png")');
+PMandelbrot.prototype.resizeController = function() {
+    this.controller.resize(
+        Math.floor(this.canvas[0].width*$("#topDiv .sizeControlDiv .widthSliderDiv .slider").slider("value")/100),
+        Math.floor(this.canvas[0].height*$("#topDiv .sizeControlDiv .heightSliderDiv .slider").slider("value")/100)
+    );
+
+    this.updateHidingBorders($("#topDiv .sizeControlDiv .widthSliderDiv .slider").slider("value"), $("#topDiv .sizeControlDiv .heightSliderDiv .slider").slider("value"));
+}
+
+PMandelbrot.prototype.convertPointForController = function(point) {
+    return {
+        x: point.x - Math.floor((this.canvas[0].width-this.controller.width)/2),
+        y: point.y - Math.floor((this.canvas[0].height-this.controller.height)/2)
+    };
+}
+
+PMandelbrot.prototype.updateHidingBorders = function(widthSliderValue, heightSliderValue) {
+console.log(widthSliderValue+", "+heightSliderValue);
+    var xDiff = (this.canvas[0].width-Math.floor(this.canvas[0].width*widthSliderValue/100))/2;
+    var yDiff = (this.canvas[0].height-Math.floor(this.canvas[0].height*heightSliderValue/100))/2;
+    $("#hidingBordersDiv .top").css("height", Math.floor(yDiff));
+    $("#hidingBordersDiv .bottom").css("height", Math.ceil(yDiff));
+
+    $("#hidingBordersDiv .left").css("width", Math.floor(xDiff));
+    $("#hidingBordersDiv .right").css("width", Math.ceil(xDiff));
 }
